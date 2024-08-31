@@ -1,20 +1,33 @@
 ﻿using Candidates.API.Data;
 using Candidates.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Candidates.API.Repositories
 {
-    public class CandidateRepository(ApplicationDbContext dbContext) : ICandidateRepository
+    public class CandidateRepository(ApplicationDbContext dbContext, IMemoryCache cache) : ICandidateRepository
     {
         public async Task<bool> Create(Candidate candidate)
         {
             dbContext.Add(candidate);
+            cache.Remove($"Candidate_Exists_{candidate.Email}");
             return await dbContext.SaveChangesAsync() > 0;
         }
 
         public async Task<bool> ExistsByEmail(string email)
         {
-            return await dbContext.Candidates.AnyAsync(c => c.Email == email);
+            var cacheKey = $"Candidate_Exists_{email}";
+
+            if (cache.TryGetValue(cacheKey, out bool exists))
+            {
+                return exists;
+            }
+
+            exists = await dbContext.Candidates.AnyAsync(c => c.Email == email);
+
+            cache.Set(cacheKey, exists, TimeSpan.FromMinutes(5));
+
+            return exists;
         }
 
         public async Task<bool> Update(Candidate candidate)
@@ -31,6 +44,7 @@ namespace Candidates.API.Repositories
                 existingCandidate.GitHubProfileUrl = candidate.GitHubProfileUrl;
                 existingCandidate.Comments = candidate.Comments;
             }
+            cache.Remove($"Candidate_Exists_{candidate.Email}");
             return await dbContext.SaveChangesAsync() > 0;
 
         }
