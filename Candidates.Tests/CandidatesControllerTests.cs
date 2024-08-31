@@ -97,5 +97,31 @@ namespace Candidates.Tests
 
             Assert.IsType<BadRequestResult>(result);
         }
+
+        [Fact]
+        public async Task CreateOrUpdate_ShouldReturnBadRequest_WhenCreateFails()
+        {
+            var candidate = new Candidate
+            {
+                Email = "newfail@example.com",
+                FirstName = "NewFail",
+                LastName = "Case",
+                PhoneNumber = "1111111111",
+                CallTimeInterval = "Anytime",
+                LinkedInProfileUrl = "https://www.linkedin.com/in/newfailcase",
+                GitHubProfileUrl = "https://github.com/newfailcase",
+                Comments = "This create should fail"
+            };
+
+            _mockCandidateService.Setup(service => service.ExistsByEmail(candidate.Email))
+                .ReturnsAsync(false);
+
+            _mockCandidateService.Setup(service => service.Create(candidate))
+                .ReturnsAsync(false);
+
+            var result = await _controller.CreateOrUpdate(candidate);
+
+            Assert.IsType<BadRequestResult>(result);
+        }
     }
 }
