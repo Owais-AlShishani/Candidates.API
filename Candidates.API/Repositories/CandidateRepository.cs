@@ -12,7 +12,7 @@ namespace Candidates.API.Repositories
             return await dbContext.SaveChangesAsync() > 0;
         }
 
-        public async Task<bool> ExistByEmail(string email)
+        public async Task<bool> ExistsByEmail(string email)
         {
             return await dbContext.Candidates.AnyAsync(c => c.Email == email);
         }
